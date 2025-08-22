@@ -347,7 +347,7 @@ class UMA_TOOL_OT_generate_controllers(bpy.types.Operator):
 
 
 class UMA_TOOL_OT_optimize_skeleton_display(bpy.types.Operator):
-    """隐藏所有以 _Handle 结尾的骨骼"""
+    """隐藏所有以 _Handle 结尾的骨骼和指定的耳朵骨骼"""
     bl_idname = "uma_tool.optimize_skeleton_display"
     bl_label = "优化骨骼显示"
     bl_options = {'REGISTER', 'UNDO'}
@@ -362,17 +362,18 @@ class UMA_TOOL_OT_optimize_skeleton_display(bpy.types.Operator):
             bpy.ops.object.mode_set(mode='OBJECT')
         
         hidden_count = 0
+        bones_to_hide = ["Sp_He_Ear0_R_01", "Sp_He_Ear0_R_02", "Sp_He_Ear0_L_01", "Sp_He_Ear0_L_02"]
         for bone in armature.data.bones:
-            if bone.name.endswith("_Handle"):
+            if bone.name.endswith("_Handle") or bone.name in bones_to_hide:
                 bone.hide = True
                 hidden_count += 1
         
-        self.report({'INFO'}, f"已隐藏 {hidden_count} 根 '_Handle' 骨骼。")
+        self.report({'INFO'}, f"已隐藏 {hidden_count} 根骨骼。")
         return {'FINISHED'}
 
 
 class UMA_TOOL_OT_revert_skeleton_display(bpy.types.Operator):
-    """显示所有以 _Handle 结尾的骨骼"""
+    """显示所有以 _Handle 结尾的骨骼和指定的耳朵骨骼"""
     bl_idname = "uma_tool.revert_skeleton_display"
     bl_label = "反向优化骨骼显示"
     bl_options = {'REGISTER', 'UNDO'}
@@ -387,12 +388,13 @@ class UMA_TOOL_OT_revert_skeleton_display(bpy.types.Operator):
             bpy.ops.object.mode_set(mode='OBJECT')
 
         shown_count = 0
+        bones_to_show = ["Sp_He_Ear0_R_01", "Sp_He_Ear0_R_02", "Sp_He_Ear0_L_01", "Sp_He_Ear0_L_02"]
         for bone in armature.data.bones:
-            if bone.name.endswith("_Handle"):
+            if bone.name.endswith("_Handle") or bone.name in bones_to_show:
                 bone.hide = False
                 shown_count += 1
 
-        self.report({'INFO'}, f"已显示 {shown_count} 根 '_Handle' 骨骼。")
+        self.report({'INFO'}, f"已显示 {shown_count} 根骨骼。")
         return {'FINISHED'}
 
 
