@@ -32,6 +32,13 @@ class UMA_TOOL_OT_generate_controllers(bpy.types.Operator):
 
         new_controllers = {}
 
+        bone_custom_colors = {
+            "Left": (0.0, 1.0, 1.0),  # Cyan
+            "Right": (1.0, 1.0, 0.0),  # Yellow
+            "Center": (1.0, 0.0, 1.0),  # Magenta
+        }
+        active_color = (1.0, 0.0, 0.0)  # Red
+
         for config in BONE_CONFIGS:
             bone = armature.data.bones.get(config.bone_name)  # pyright: ignore[reportAttributeAccessIssue]
             if not bone:
@@ -41,6 +48,20 @@ class UMA_TOOL_OT_generate_controllers(bpy.types.Operator):
                 continue
 
             ctrl_name = f"CTRL_{config.bone_name}"
+
+            bone_name_low = config.bone_name.lower()
+            group_name = "Center"
+            if ".l" in bone_name_low or "_l" in bone_name_low:
+                group_name = "Left"
+            elif ".r" in bone_name_low or "_r" in bone_name_low:
+                group_name = "Right"
+
+            if hasattr(bone, "color"):
+                bone.color.palette = "CUSTOM"
+                color = bone_custom_colors[group_name]
+                bone.color.custom.normal = color
+                bone.color.custom.active = active_color
+                bone.color.custom.select = color
 
             existing_ctrl = bpy.data.objects.get(ctrl_name)
             if existing_ctrl:
