@@ -1,7 +1,6 @@
 import bpy
 from mathutils import Vector, Euler
 from collections import namedtuple
-import math
 
 bl_info = {
     "name": "赛马娘工具",
@@ -204,10 +203,10 @@ class UMA_TOOL_OT_generate_controllers(bpy.types.Operator):
 
     def execute(self, context):
         armature = context.active_object
-        
+
         if context.mode != 'OBJECT':
             bpy.ops.object.mode_set(mode='OBJECT')
-        
+
         ctrl_collection_name = "Controllers"
         if ctrl_collection_name not in bpy.data.collections:
             ctrl_collection = bpy.data.collections.new(ctrl_collection_name)
@@ -224,19 +223,19 @@ class UMA_TOOL_OT_generate_controllers(bpy.types.Operator):
                 continue
 
             ctrl_name = f"CTRL_{config.bone_name}"
-            
+
             existing_ctrl = bpy.data.objects.get(ctrl_name)
             if existing_ctrl:
                 bpy.data.objects.remove(existing_ctrl, do_unlink=True)
-            
+
             bone_length = bone.length
             if bone_length < 0.001: bone_length = 0.1
 
             controller = None
             controller_size = bone_length * config.radius_multiplier
-            
+
             context.view_layer.objects.active = armature
-            
+
             if config.shape == 'CIRCLE':
                 bpy.ops.curve.primitive_bezier_circle_add(radius=controller_size, enter_editmode=False, align='WORLD', location=(0, 0, 0))
                 controller = context.active_object
@@ -251,8 +250,8 @@ class UMA_TOOL_OT_generate_controllers(bpy.types.Operator):
 
             if not controller:
                 continue
-            
-            controller.name = ctrl_name 
+
+            controller.name = ctrl_name
             new_controllers[config.bone_name] = controller
 
             for coll in controller.users_collection:
@@ -261,7 +260,7 @@ class UMA_TOOL_OT_generate_controllers(bpy.types.Operator):
 
         context.view_layer.objects.active = armature
         bpy.ops.object.mode_set(mode='POSE')
-        
+
         for config in BONE_CONFIGS:
             pose_bone = armature.pose.bones.get(config.bone_name)
             if not pose_bone:
@@ -274,9 +273,9 @@ class UMA_TOOL_OT_generate_controllers(bpy.types.Operator):
             pose_bone.custom_shape = None
 
             controller.matrix_world = armature.matrix_world @ pose_bone.matrix
-            
+
             pose_bone.custom_shape = controller
-            
+
             if config.shape_rotation_euler == 'GLOBAL_HORIZONTAL':
                 bone_rotation_matrix = pose_bone.matrix.to_3x3()
                 inverse_rotation_matrix = bone_rotation_matrix.inverted()
@@ -289,16 +288,16 @@ class UMA_TOOL_OT_generate_controllers(bpy.types.Operator):
             direction_vec = Vector(config.offset_direction)
             offset_vector = direction_vec * pose_bone.length * config.offset_multiplier
             pose_bone.custom_shape_translation = offset_vector
-            
+
             pose_bone.use_custom_shape_bone_size = False
             armature.data.bones[pose_bone.name].show_wire = True
 
             controller.hide_select = True
             controller.hide_viewport = True
-        
+
         bpy.ops.object.mode_set(mode='OBJECT')
-        
-        self.report({'INFO'}, f"控制器已清理并重新生成。")
+
+        self.report({'INFO'}, "控制器已清理并重新生成。")
         return {'FINISHED'}
 
 
@@ -316,14 +315,14 @@ class UMA_TOOL_OT_optimize_skeleton_display(bpy.types.Operator):
         armature = context.active_object
         if context.mode != 'OBJECT':
             bpy.ops.object.mode_set(mode='OBJECT')
-        
+
         hidden_count = 0
         bones_to_hide = ["Sp_He_Ear0_R_01", "Sp_He_Ear0_R_02", "Sp_He_Ear0_L_01", "Sp_He_Ear0_L_02"]
         for bone in armature.data.bones:
             if bone.name.endswith("_Handle") or bone.name in bones_to_hide:
                 bone.hide = True
                 hidden_count += 1
-        
+
         self.report({'INFO'}, f"已隐藏 {hidden_count} 根骨骼。")
         return {'FINISHED'}
 
@@ -363,11 +362,11 @@ class UMA_TOOL_PT_main_panel(bpy.types.Panel):
 
     def draw(self, context):
         layout = self.layout
-        
+
         box = layout.box()
         box.label(text="控制器生成")
         box.operator(UMA_TOOL_OT_generate_controllers.bl_idname)
-        
+
         box = layout.box()
         box.label(text="骨架显示")
         box.operator(UMA_TOOL_OT_optimize_skeleton_display.bl_idname)
