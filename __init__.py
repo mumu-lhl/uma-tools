@@ -3,11 +3,10 @@ from mathutils import Vector, Euler
 from collections import namedtuple
 import math
 
-# --- 插件信息 ---
 bl_info = {
     "name": "赛马娘工具",
     "author": "Gemini & Mumulhl",
-    "version": (0, 1, 1), # 版本号微调
+    "version": (0, 1, 0),
     "blender": (4, 2, 0),
     "location": "3D视图 > 侧边栏 > 赛马娘工具",
     "description": "赛马娘一键生成控制器、骨骼优化显示工具。",
@@ -16,7 +15,6 @@ bl_info = {
     "category": "Rigging",
 }
 
-# --- 核心配置 ---
 ControllerConfig = namedtuple(
     "ControllerConfig",
     [
@@ -25,9 +23,7 @@ ControllerConfig = namedtuple(
     ]
 )
 
-# 1.5708 约等于 90 度
 BONE_CONFIGS = [
-    # --- 主干部分 ---
     ControllerConfig(
         bone_name="Head", shape="CIRCLE", radius_multiplier=7.0,
         offset_direction=(0, -1, 0), offset_multiplier=5.0,
@@ -43,8 +39,6 @@ BONE_CONFIGS = [
         offset_direction=(0, -1, -1), offset_multiplier=1.5,
         shape_rotation_euler='GLOBAL_HORIZONTAL'
     ),
-
-    # --- 右耳 ---
     ControllerConfig(
         bone_name="Ear_01_R", shape="CIRCLE", radius_multiplier=1.0,
         offset_direction=(0, 0, 0), offset_multiplier=0.0,
@@ -55,14 +49,11 @@ BONE_CONFIGS = [
         offset_direction=(0, 0, 0), offset_multiplier=0.0,
         shape_rotation_euler=(1.5708, 0, 0)
     ),
-    # --- 新增 ---
     ControllerConfig(
         bone_name="Ear_03_R", shape="CIRCLE", radius_multiplier=0.3,
         offset_direction=(0, 0, 0), offset_multiplier=0.0,
         shape_rotation_euler=(1.5708, 0, 0)
     ),
-
-    # --- 左耳 ---
     ControllerConfig(
         bone_name="Ear_01_L", shape="CIRCLE", radius_multiplier=1.0,
         offset_direction=(0, 0, 0), offset_multiplier=0.0,
@@ -73,14 +64,11 @@ BONE_CONFIGS = [
         offset_direction=(0, 0, 0), offset_multiplier=0.0,
         shape_rotation_euler=(1.5708, 0, 0)
     ),
-    # --- 新增 ---
     ControllerConfig(
         bone_name="Ear_03_L", shape="CIRCLE", radius_multiplier=0.3,
         offset_direction=(0, 0, 0), offset_multiplier=0.0,
         shape_rotation_euler=(1.5708, 0, 0)
     ),
-
-    # --- 右臂 ---
     ControllerConfig(
         bone_name="Shoulder_R", shape="CIRCLE", radius_multiplier=2,
         offset_direction=(0, 0, 0), offset_multiplier=0.0,
@@ -96,8 +84,6 @@ BONE_CONFIGS = [
         offset_direction=(0, 0, 0), offset_multiplier=0.0,
         shape_rotation_euler=(1.5708, 0, 0)
     ),
-
-    # --- 右手 ---
     ControllerConfig(
         bone_name="Wrist_R", shape="CIRCLE", radius_multiplier=1.5,
         offset_direction=(0, 0, 0), offset_multiplier=0.0,
@@ -121,8 +107,6 @@ BONE_CONFIGS = [
     ControllerConfig(
         bone_name="Ring_03_R", shape="SQUARE", radius_multiplier=1.0, offset_direction=(0, 0, 0), offset_multiplier=0.0, shape_rotation_euler=(1.5708, 0, 0)
     ),
-
-    # --- 左臂 ---
     ControllerConfig(
         bone_name="Shoulder_L", shape="CIRCLE", radius_multiplier=2,
         offset_direction=(0, 0, 0), offset_multiplier=0.0,
@@ -138,8 +122,6 @@ BONE_CONFIGS = [
         offset_direction=(0, 0, 0), offset_multiplier=0.0,
         shape_rotation_euler=(1.5708, 0, 0)
     ),
-
-    # --- 左手 ---
     ControllerConfig(
         bone_name="Wrist_L", shape="CIRCLE", radius_multiplier=1.5,
         offset_direction=(0, 0, 0), offset_multiplier=0.0,
@@ -163,8 +145,6 @@ BONE_CONFIGS = [
     ControllerConfig(
         bone_name="Ring_03_L", shape="SQUARE", radius_multiplier=1.0, offset_direction=(0, 0, 0), offset_multiplier=0.0, shape_rotation_euler=(1.5708, 0, 0)
     ),
-
-    # --- 右腿 ---
     ControllerConfig(
         bone_name="Thigh_R", shape="CIRCLE", radius_multiplier=1.0,
         offset_direction=(0, 0, 0), offset_multiplier=0.0,
@@ -180,8 +160,6 @@ BONE_CONFIGS = [
         offset_direction=(0, 0, 0), offset_multiplier=0.0,
         shape_rotation_euler=(1.5708, 0, 0)
     ),
-
-    # --- 左腿 ---
     ControllerConfig(
         bone_name="Thigh_L", shape="CIRCLE", radius_multiplier=1,
         offset_direction=(0, 0, 0), offset_multiplier=0.0,
@@ -197,8 +175,6 @@ BONE_CONFIGS = [
         offset_direction=(0, 0, 0), offset_multiplier=0.0,
         shape_rotation_euler=(1.5708, 0, 0)
     ),
-
-    # --- 尾巴 ---
     ControllerConfig(
         bone_name="Sp_Hi_Tail0_B_00", shape="CIRCLE", radius_multiplier=1,
         offset_direction=(0, 0, 0), offset_multiplier=0.0,
@@ -216,7 +192,6 @@ BONE_CONFIGS = [
     ),
 ]
 
-# --- 已重构和修复的 Operator ---
 class UMA_TOOL_OT_generate_controllers(bpy.types.Operator):
     """遍历配置列表，为所有定义的骨骼生成控制器"""
     bl_idname = "uma_tool.generate_controllers"
@@ -230,11 +205,9 @@ class UMA_TOOL_OT_generate_controllers(bpy.types.Operator):
     def execute(self, context):
         armature = context.active_object
         
-        # 确保在 OBJECT 模式下执行清理和创建
         if context.mode != 'OBJECT':
             bpy.ops.object.mode_set(mode='OBJECT')
         
-        # 准备控制器集合
         ctrl_collection_name = "Controllers"
         if ctrl_collection_name not in bpy.data.collections:
             ctrl_collection = bpy.data.collections.new(ctrl_collection_name)
@@ -242,10 +215,8 @@ class UMA_TOOL_OT_generate_controllers(bpy.types.Operator):
         else:
             ctrl_collection = bpy.data.collections[ctrl_collection_name]
 
-        # 存储新创建的控制器，键为骨骼名，值为控制器对象
         new_controllers = {}
 
-        # --- 第一阶段：在物体模式下清理旧的并创建新的控制器 ---
         for config in BONE_CONFIGS:
             bone = armature.data.bones.get(config.bone_name)
             if not bone:
@@ -254,7 +225,6 @@ class UMA_TOOL_OT_generate_controllers(bpy.types.Operator):
 
             ctrl_name = f"CTRL_{config.bone_name}"
             
-            # 清理可能存在的旧控制器
             existing_ctrl = bpy.data.objects.get(ctrl_name)
             if existing_ctrl:
                 bpy.data.objects.remove(existing_ctrl, do_unlink=True)
@@ -262,11 +232,9 @@ class UMA_TOOL_OT_generate_controllers(bpy.types.Operator):
             bone_length = bone.length
             if bone_length < 0.001: bone_length = 0.1
 
-            # 创建新的控制器
             controller = None
             controller_size = bone_length * config.radius_multiplier
             
-            # 激活骨架，以防万一活动物体是别的
             context.view_layer.objects.active = armature
             
             if config.shape == 'CIRCLE':
@@ -275,7 +243,7 @@ class UMA_TOOL_OT_generate_controllers(bpy.types.Operator):
             elif config.shape == 'SQUARE':
                 bpy.ops.curve.primitive_bezier_circle_add(radius=controller_size, enter_editmode=False, align='WORLD', location=(0, 0, 0))
                 controller = context.active_object
-                context.view_layer.objects.active = controller # 确保控制器是活动对象以进入编辑模式
+                context.view_layer.objects.active = controller
                 bpy.ops.object.mode_set(mode='EDIT')
                 bpy.ops.curve.select_all(action='SELECT')
                 bpy.ops.curve.handle_type_set(type='VECTOR')
@@ -287,12 +255,10 @@ class UMA_TOOL_OT_generate_controllers(bpy.types.Operator):
             controller.name = ctrl_name 
             new_controllers[config.bone_name] = controller
 
-            # 将控制器放入集合
             for coll in controller.users_collection:
                 coll.objects.unlink(controller)
             ctrl_collection.objects.link(controller)
 
-        # --- 第二阶段：进入姿态模式一次，然后分配所有属性 ---
         context.view_layer.objects.active = armature
         bpy.ops.object.mode_set(mode='POSE')
         
@@ -301,45 +267,35 @@ class UMA_TOOL_OT_generate_controllers(bpy.types.Operator):
             if not pose_bone:
                 continue
 
-            # 从我们的字典中获取新创建的控制器
             controller = new_controllers.get(config.bone_name)
             if not controller:
                 continue
 
-            # 清除旧的 custom_shape 引用（以防万一）
             pose_bone.custom_shape = None
 
-            # 匹配控制器位置和骨骼位置
             controller.matrix_world = armature.matrix_world @ pose_bone.matrix
             
-            # 分配新的 custom_shape
             pose_bone.custom_shape = controller
             
-            # 设置旋转
             if config.shape_rotation_euler == 'GLOBAL_HORIZONTAL':
                 bone_rotation_matrix = pose_bone.matrix.to_3x3()
                 inverse_rotation_matrix = bone_rotation_matrix.inverted()
-                # 目标是世界水平，所以局部旋转为0
                 target_rotation_matrix = Euler((0, 0, 0), 'XYZ').to_matrix().to_3x3()
                 final_rotation_matrix = inverse_rotation_matrix @ target_rotation_matrix
                 pose_bone.custom_shape_rotation_euler = final_rotation_matrix.to_euler('XYZ')
             else:
                 pose_bone.custom_shape_rotation_euler = config.shape_rotation_euler
 
-            # 设置偏移
             direction_vec = Vector(config.offset_direction)
             offset_vector = direction_vec * pose_bone.length * config.offset_multiplier
             pose_bone.custom_shape_translation = offset_vector
             
-            # 其他属性设置
             pose_bone.use_custom_shape_bone_size = False
             armature.data.bones[pose_bone.name].show_wire = True
 
-            # 隐藏控制器物体本身
             controller.hide_select = True
             controller.hide_viewport = True
         
-        # --- 完成后，返回物体模式 ---
         bpy.ops.object.mode_set(mode='OBJECT')
         
         self.report({'INFO'}, f"控制器已清理并重新生成。")
