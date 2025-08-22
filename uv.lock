@@ -1,0 +1,23 @@
+version = 1
+revision = 3
+requires-python = ">=3.11"
+
+[[package]]
+name = "fake-bpy-module"
+version = "20250630"
+source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple/" }
+sdist = { url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/packages/f0/5e/b956ac429e06a98f11f6316cdb7c94b86afd866b43923d0ca846964d34b0/fake_bpy_module-20250630.tar.gz", hash = "sha256:5d0e9cd6686aee1842fc63249f108dbd42374a5080ed513078900381658d7c00", size = 954936, upload-time = "2025-06-30T06:19:50.074Z" }
+wheels = [
+    { url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/packages/b4/1a/dcdc4882c6f590b4f16fc118ef29115b718d786cd252d298e8faaf136ca7/fake_bpy_module-20250630-py3-none-any.whl", hash = "sha256:2f701fa3858c452b1bf44d19feb47a5b1d2c0cc02a17b61616009f2b9535aedc", size = 1081797, upload-time = "2025-06-30T06:19:47.812Z" },
+]
+
+[[package]]
+name = "uma-tools"
+version = "0.1.0"
+source = { virtual = "." }
+dependencies = [
+    { name = "fake-bpy-module" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "fake-bpy-module", specifier = ">=20250630" }]
