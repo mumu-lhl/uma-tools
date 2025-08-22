@@ -432,4 +432,8 @@ def unregister():
         bpy.utils.unregister_class(cls)
 
 if __name__ == "__main__":
+    try:
+        unregister()
+    except Exception:
+        pass
     register()
