@@ -101,27 +101,24 @@ class UMA_TOOL_OT_generate_controllers(bpy.types.Operator):
                 bpy.ops.object.mode_set(mode="OBJECT")
 
             elif config.shape == "ARROW_CIRCLE":
-                bpy.ops.curve.primitive_bezier_circle_add(
-                    radius=controller_size,
-                    enter_editmode=False,
-                    align="WORLD",
-                    location=(0, 0, 0),
-                )
+                # 创建一个空的曲线对象来容纳所有的几何体
+                bpy.ops.object.add(type="CURVE", location=(0, 0, 0))
                 controller = context.active_object
-
-                objects_to_join = [controller]
+                splines = controller.data.splines  # pyright: ignore[reportAttributeAccessIssue]
+                # 清除默认创建的样条线
+                splines.clear()
 
                 arrow_size = controller_size * 0.4
                 arrow_offset = controller_size * 1.0
 
+                # 用于存储每个箭头基部在世界坐标系下的起点和终点
+                arrow_base_points_world = []
+
+                # 循环创建4个箭头样条线
                 for i in range(4):
-                    bpy.ops.curve.primitive_bezier_curve_add(enter_editmode=True)
-                    arrow = context.active_object
-
-                    bpy.ops.curve.subdivide(number_cuts=5)
-                    spline = arrow.data.splines[0]  # pyright: ignore[reportAttributeAccessIssue]
-
-                    points_pos: list[tuple[float, float, float]] = [
+                    spline = splines.new("BEZIER")
+                    # 定义单个箭头的局部坐标点
+                    points_pos_raw: list[tuple[float, float, float]] = [
                         (-0.3, -0.05, 0),
                         (-0.3, 0.5, 0),
                         (-0.5, 0.5, 0),
@@ -130,29 +127,61 @@ class UMA_TOOL_OT_generate_controllers(bpy.types.Operator):
                         (0.3, 0.5, 0),
                         (0.3, -0.05, 0),
                     ]
-                    for j, pos in enumerate(points_pos):
-                        point = spline.bezier_points[j]
-                        point.co = Vector(pos) * arrow_size
-                        point.handle_left_type = "VECTOR"
-                        point.handle_right_type = "VECTOR"
 
-                    bpy.ops.object.mode_set(mode="OBJECT")
-
+                    # 计算每个箭头的旋转和位置
                     angle = i * math.pi / 2
-                    arrow.rotation_euler.z = -angle
-                    arrow.location.x = arrow_offset * math.sin(angle)
-                    arrow.location.y = arrow_offset * math.cos(angle)
+                    rot_matrix = Euler((0, 0, -angle), "XYZ").to_matrix()
+                    location = Vector(
+                        (
+                            arrow_offset * math.sin(angle),
+                            arrow_offset * math.cos(angle),
+                            0,
+                        )
+                    )
 
-                    objects_to_join.append(arrow)
+                    # 将局部坐标点转换为世界坐标
+                    world_points = [
+                        location + rot_matrix @ (Vector(p) * arrow_size)
+                        for p in points_pos_raw
+                    ]
 
-                context.view_layer.objects.active = controller
-                for obj in context.selected_objects:
-                    obj.select_set(False)
+                    # 将计算好的点添加到样条线中
+                    spline.bezier_points.add(len(world_points) - 1)
+                    for j, p_co in enumerate(world_points):
+                        p = spline.bezier_points[j]
+                        p.co = p_co
+                        p.handle_left_type = "VECTOR"
+                        p.handle_right_type = "VECTOR"
 
-                for obj in objects_to_join:
-                    obj.select_set(True)
+                    # 记录下箭头基部的两个点，用于后续连接圆弧
+                    arrow_base_points_world.append((world_points[0], world_points[-1]))
 
-                bpy.ops.object.join()
+                # 循环创建4个圆弧样条线来连接箭头
+                for i in range(4):
+                    next_i = (i + 1) % 4
+                    # 获取当前箭头的终点和下一个箭头的起点
+                    p_start = arrow_base_points_world[i][1]
+                    p_end = arrow_base_points_world[next_i][0]
+
+                    spline = splines.new("BEZIER")
+                    spline.bezier_points.add(1)
+                    p0, p1 = spline.bezier_points
+                    p0.co, p1.co = p_start, p_end
+
+                    # --- 设置贝塞尔手柄以形成平滑的圆弧 ---
+                    # 这个神奇数字是 (4/3)*tan(pi/8)，用于通过2个贝塞尔点创建90度圆弧
+                    handle_len = controller_size * 0.55228
+                    # 计算起点的手柄向量
+                    v_start = p_start.normalized()
+                    h_start = v_start.cross(Vector((0, 0, 1))).normalized() * handle_len
+                    p0.handle_right, p0.handle_left = p0.co + h_start, p0.co - h_start
+                    # 计算终点的手柄向量
+                    v_end = p_end.normalized()
+                    h_end = v_end.cross(Vector((0, 0, 1))).normalized() * handle_len
+                    p1.handle_left, p1.handle_right = p1.co - h_end, p1.co + h_end
+                    # 设置手柄类型为对齐，以确保曲线平滑
+                    p0.handle_left_type = p0.handle_right_type = "ALIGNED"
+                    p1.handle_left_type = p1.handle_right_type = "ALIGNED"
 
             if not controller:
                 continue
