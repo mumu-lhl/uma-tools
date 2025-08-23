@@ -1,4 +1,5 @@
 import bpy
+import math
 from mathutils import Vector, Euler
 from ..config.bone_config import BONE_CONFIGS
 
@@ -84,6 +85,7 @@ class UMA_TOOL_OT_generate_controllers(bpy.types.Operator):
                     location=(0, 0, 0),
                 )
                 controller = context.active_object
+
             elif config.shape == "SQUARE":
                 bpy.ops.curve.primitive_bezier_circle_add(
                     radius=controller_size,
@@ -97,6 +99,60 @@ class UMA_TOOL_OT_generate_controllers(bpy.types.Operator):
                 bpy.ops.curve.select_all(action="SELECT")
                 bpy.ops.curve.handle_type_set(type="VECTOR")
                 bpy.ops.object.mode_set(mode="OBJECT")
+
+            elif config.shape == "ARROW_CIRCLE":
+                bpy.ops.curve.primitive_bezier_circle_add(
+                    radius=controller_size,
+                    enter_editmode=False,
+                    align="WORLD",
+                    location=(0, 0, 0),
+                )
+                controller = context.active_object
+
+                objects_to_join = [controller]
+
+                arrow_size = controller_size * 0.4
+                arrow_offset = controller_size * 1.0
+
+                for i in range(4):
+                    bpy.ops.curve.primitive_bezier_curve_add(enter_editmode=True)
+                    arrow = context.active_object
+
+                    bpy.ops.curve.subdivide(number_cuts=5)
+                    spline = arrow.data.splines[0]  # pyright: ignore[reportAttributeAccessIssue]
+
+                    points_pos: list[tuple[float, float, float]] = [
+                        (-0.3, -0.05, 0),
+                        (-0.3, 0.5, 0),
+                        (-0.5, 0.5, 0),
+                        (0, 1, 0),
+                        (0.5, 0.5, 0),
+                        (0.3, 0.5, 0),
+                        (0.3, -0.05, 0),
+                    ]
+                    for j, pos in enumerate(points_pos):
+                        point = spline.bezier_points[j]
+                        point.co = Vector(pos) * arrow_size
+                        point.handle_left_type = "VECTOR"
+                        point.handle_right_type = "VECTOR"
+
+                    bpy.ops.object.mode_set(mode="OBJECT")
+
+                    angle = i * math.pi / 2
+                    arrow.rotation_euler.z = -angle
+                    arrow.location.x = arrow_offset * math.sin(angle)
+                    arrow.location.y = arrow_offset * math.cos(angle)
+
+                    objects_to_join.append(arrow)
+
+                context.view_layer.objects.active = controller
+                for obj in context.selected_objects:
+                    obj.select_set(False)
+
+                for obj in objects_to_join:
+                    obj.select_set(True)
+
+                bpy.ops.object.join()
 
             if not controller:
                 continue

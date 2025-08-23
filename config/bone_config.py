@@ -33,7 +33,7 @@ BONE_CONFIGS = [
     ),
     ControllerConfig(
         bone_name="Hip",
-        shape="SQUARE",
+        shape="ARROW_CIRCLE",
         radius_multiplier=5.0,
         offset_direction=(0, -1, -1),
         offset_multiplier=1.5,
