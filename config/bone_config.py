@@ -318,3 +318,15 @@ BONE_CONFIGS = [
         shape_rotation_euler=(1.5708, 0, 0),
     ),
 ]
+
+# Adapt to bones ending with .R/.L instead of _R/_L
+new_configs = []
+for config in BONE_CONFIGS:
+    if config.bone_name.endswith("_R"):
+        new_name = config.bone_name[:-2] + ".R"
+        new_configs.append(config._replace(bone_name=new_name))
+    elif config.bone_name.endswith("_L"):
+        new_name = config.bone_name[:-2] + ".L"
+        new_configs.append(config._replace(bone_name=new_name))
+
+BONE_CONFIGS.extend(new_configs)
