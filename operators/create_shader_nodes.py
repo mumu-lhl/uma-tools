@@ -3,13 +3,8 @@ import bpy
 from bpy.types import Menu
 
 
-def get_or_create_eye_or_mouth_position_nodegroup():
-    """Ensures the '眼睛/嘴巴位置' node group exists and returns it."""
-    group_name = "眼睛/嘴巴位置"
-
-    if group_name in bpy.data.node_groups:
-        return bpy.data.node_groups[group_name]
-
+def _create_position_nodegroup(group_name: str, y_offset_value: float):
+    """Creates a shader node group for positioning with a specific Y offset."""
     # Create the node group
     group = bpy.data.node_groups.new(name=group_name, type="ShaderNodeTree")
 
@@ -19,7 +14,9 @@ def get_or_create_eye_or_mouth_position_nodegroup():
     )
     socket_in.default_value = 1  # pyright: ignore[reportAttributeAccessIssue]
 
-    group.interface.new_socket(name="矢量", in_out="INPUT", socket_type="NodeSocketVector")
+    group.interface.new_socket(
+        name="矢量", in_out="INPUT", socket_type="NodeSocketVector"
+    )
 
     group.interface.new_socket(
         name="矢量", in_out="OUTPUT", socket_type="NodeSocketVector"
@@ -70,7 +67,7 @@ def get_or_create_eye_or_mouth_position_nodegroup():
     y_offset_node.name = "Y偏移"
     y_offset_node.label = "Y偏移"
     y_offset_node.operation = "MULTIPLY"  # pyright: ignore[reportAttributeAccessIssue]
-    y_offset_node.inputs[1].default_value = -0.125  # pyright: ignore[reportAttributeAccessIssue]
+    y_offset_node.inputs[1].default_value = y_offset_value  # pyright: ignore[reportAttributeAccessIssue]
     y_offset_node.location = (0, 0)
 
     combine_xyz_node = group.nodes.new("ShaderNodeCombineXYZ")
@@ -97,6 +94,22 @@ def get_or_create_eye_or_mouth_position_nodegroup():
     links.new(mapping_node.outputs["Vector"], group_output_node.inputs["矢量"])
 
     return group
+
+
+def get_or_create_eye_or_mouth_position_nodegroup():
+    """Ensures the '眼睛/嘴巴位置' node group exists and returns it."""
+    group_name = "眼睛/嘴巴位置"
+    if group_name in bpy.data.node_groups:
+        return bpy.data.node_groups[group_name]
+    return _create_position_nodegroup(group_name, -0.125)
+
+
+def get_or_create_eyelash_position_nodegroup():
+    """Ensures the '睫毛位置' node group exists and returns it."""
+    group_name = "睫毛位置"
+    if group_name in bpy.data.node_groups:
+        return bpy.data.node_groups[group_name]
+    return _create_position_nodegroup(group_name, -0.25)
 
 
 class UMA_OT_AddEyeOrMoutnhPositionNode(bpy.types.Operator):
@@ -131,6 +144,38 @@ class UMA_OT_AddEyeOrMoutnhPositionNode(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class UMA_OT_AddEyelashPositionNode(bpy.types.Operator):
+    """Adds the '睫毛位置' node group to the active shader tree."""
+
+    bl_idname = "uma.add_eyelash_position_node"
+    bl_label = "睫毛位置"
+    bl_description = "添加一个睫毛位置节点组"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        space = context.space_data
+        return (
+            space.type == "NODE_EDITOR"
+            and space.shader_type == "OBJECT"  # pyright: ignore[reportAttributeAccessIssue]
+            and context.object.active_material is not None
+        )
+
+    def execute(self, context):  # pyright: ignore[reportIncompatibleMethodOverride]
+        group = get_or_create_eyelash_position_nodegroup()
+
+        node = context.space_data.edit_tree.nodes.new(type="ShaderNodeGroup")  # pyright: ignore[reportAttributeAccessIssue]
+        node.node_tree = group
+        node.name = group.name
+        node.label = group.name
+
+        node.location = context.space_data.cursor_location  # pyright: ignore[reportAttributeAccessIssue]
+        node.select = True
+        context.space_data.edit_tree.nodes.active = node  # pyright: ignore[reportAttributeAccessIssue]
+
+        return {"FINISHED"}
+
+
 class UMA_MT_node_add_menu(Menu):
     bl_label = "赛马娘工具"
     bl_idname = "UMA_MT_node_add_menu"
@@ -139,7 +184,12 @@ class UMA_MT_node_add_menu(Menu):
         layout = self.layout
         layout.operator_context = "INVOKE_DEFAULT"
         layout.operator(
-            UMA_OT_AddEyeOrMoutnhPositionNode.bl_idname, text=UMA_OT_AddEyeOrMoutnhPositionNode.bl_label
+            UMA_OT_AddEyeOrMoutnhPositionNode.bl_idname,
+            text=UMA_OT_AddEyeOrMoutnhPositionNode.bl_label,
+        )
+        layout.operator(
+            UMA_OT_AddEyelashPositionNode.bl_idname,
+            text=UMA_OT_AddEyelashPositionNode.bl_label,
         )
 
 
@@ -149,11 +199,13 @@ def add_to_node_menu(self, context):
 
 def register():
     bpy.utils.register_class(UMA_OT_AddEyeOrMoutnhPositionNode)
+    bpy.utils.register_class(UMA_OT_AddEyelashPositionNode)
     bpy.utils.register_class(UMA_MT_node_add_menu)
     bpy.types.NODE_MT_add.append(add_to_node_menu)
 
 
 def unregister():
     bpy.utils.unregister_class(UMA_OT_AddEyeOrMoutnhPositionNode)
+    bpy.utils.unregister_class(UMA_OT_AddEyelashPositionNode)
     bpy.utils.unregister_class(UMA_MT_node_add_menu)
     bpy.types.NODE_MT_add.remove(add_to_node_menu)
