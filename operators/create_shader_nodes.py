@@ -3,12 +3,12 @@ import bpy
 from bpy.types import Menu
 
 
-def get_or_create_eye_position_nodegroup():
-    """Ensures the '眼睛位置' node group exists and returns it."""
-    group_name = "眼睛位置"
+def get_or_create_eye_or_mouth_position_nodegroup():
+    """Ensures the '眼睛/嘴巴位置' node group exists and returns it."""
+    group_name = "眼睛/嘴巴位置"
 
     if group_name in bpy.data.node_groups:
-        bpy.data.node_groups.remove(bpy.data.node_groups[group_name])
+        return bpy.data.node_groups[group_name]
 
     # Create the node group
     group = bpy.data.node_groups.new(name=group_name, type="ShaderNodeTree")
@@ -19,6 +19,8 @@ def get_or_create_eye_position_nodegroup():
     )
     socket_in.default_value = 1  # pyright: ignore[reportAttributeAccessIssue]
 
+    group.interface.new_socket(name="矢量", in_out="INPUT", socket_type="NodeSocketVector")
+
     group.interface.new_socket(
         name="矢量", in_out="OUTPUT", socket_type="NodeSocketVector"
     )
@@ -28,7 +30,7 @@ def get_or_create_eye_position_nodegroup():
     group_input_node.location = (-800, 0)
 
     group_output_node = group.nodes.new("NodeGroupOutput")
-    group_output_node.location = (400, 0)
+    group_output_node.location = (600, 0)
 
     subtract_node = group.nodes.new("ShaderNodeMath")
     subtract_node.name = "相减"
@@ -77,6 +79,9 @@ def get_or_create_eye_position_nodegroup():
     combine_xyz_node.inputs[2].default_value = 0.0  # pyright: ignore[reportAttributeAccessIssue]
     combine_xyz_node.location = (200, 100)
 
+    mapping_node = group.nodes.new("ShaderNodeMapping")
+    mapping_node.location = (400, 100)
+
     # --- Links ---
     links = group.links
     links.new(group_input_node.outputs["编号"], subtract_node.inputs[0])
@@ -87,17 +92,19 @@ def get_or_create_eye_position_nodegroup():
     links.new(floor_node.outputs["Value"], y_offset_node.inputs[0])
     links.new(x_offset_node.outputs["Value"], combine_xyz_node.inputs["X"])
     links.new(y_offset_node.outputs["Value"], combine_xyz_node.inputs["Y"])
-    links.new(combine_xyz_node.outputs["Vector"], group_output_node.inputs["矢量"])
+    links.new(group_input_node.outputs["矢量"], mapping_node.inputs["Vector"])
+    links.new(combine_xyz_node.outputs["Vector"], mapping_node.inputs["Location"])
+    links.new(mapping_node.outputs["Vector"], group_output_node.inputs["矢量"])
 
     return group
 
 
-class UMA_OT_AddEyePositionNode(bpy.types.Operator):
-    """Adds the '眼睛位置' node group to the active shader tree."""
+class UMA_OT_AddEyeOrMoutnhPositionNode(bpy.types.Operator):
+    """Adds the '眼睛/嘴巴位置' node group to the active shader tree."""
 
     bl_idname = "uma.add_eye_position_node"
-    bl_label = "眼睛位置"
-    bl_description = "添加一个眼睛位置节点组"
+    bl_label = "眼睛/嘴巴位置"
+    bl_description = "添加一个眼睛/嘴巴位置节点组"
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -110,7 +117,7 @@ class UMA_OT_AddEyePositionNode(bpy.types.Operator):
         )
 
     def execute(self, context):  # pyright: ignore[reportIncompatibleMethodOverride]
-        group = get_or_create_eye_position_nodegroup()
+        group = get_or_create_eye_or_mouth_position_nodegroup()
 
         node = context.space_data.edit_tree.nodes.new(type="ShaderNodeGroup")  # pyright: ignore[reportAttributeAccessIssue]
         node.node_tree = group
@@ -132,7 +139,7 @@ class UMA_MT_node_add_menu(Menu):
         layout = self.layout
         layout.operator_context = "INVOKE_DEFAULT"
         layout.operator(
-            UMA_OT_AddEyePositionNode.bl_idname, text=UMA_OT_AddEyePositionNode.bl_label
+            UMA_OT_AddEyeOrMoutnhPositionNode.bl_idname, text=UMA_OT_AddEyeOrMoutnhPositionNode.bl_label
         )
 
 
@@ -141,12 +148,12 @@ def add_to_node_menu(self, context):
 
 
 def register():
-    bpy.utils.register_class(UMA_OT_AddEyePositionNode)
+    bpy.utils.register_class(UMA_OT_AddEyeOrMoutnhPositionNode)
     bpy.utils.register_class(UMA_MT_node_add_menu)
     bpy.types.NODE_MT_add.append(add_to_node_menu)
 
 
 def unregister():
-    bpy.utils.unregister_class(UMA_OT_AddEyePositionNode)
+    bpy.utils.unregister_class(UMA_OT_AddEyeOrMoutnhPositionNode)
     bpy.utils.unregister_class(UMA_MT_node_add_menu)
     bpy.types.NODE_MT_add.remove(add_to_node_menu)
