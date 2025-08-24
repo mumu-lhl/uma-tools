@@ -5,7 +5,7 @@ from ..operators.revert_skeleton_display import UMA_TOOL_OT_revert_skeleton_disp
 
 
 class UMA_TOOL_PT_main_panel(bpy.types.Panel):
-    bl_label = "骨骼工具"
+    bl_label = "赛马娘工具"
     bl_idname = "UMA_TOOL_PT_main_panel"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
