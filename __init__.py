@@ -4,7 +4,7 @@ import importlib
 bl_info = {
     "name": "赛马娘工具",
     "author": "Gemini & Mumulhl",
-    "version": (0, 1, 0),
+    "version": (0, 1, 1),
     "blender": (4, 2, 0),
     "location": "3D视图 > 侧边栏 > 赛马娘工具",
     "description": "赛马娘一键生成控制器、骨骼优化显示工具、着色器节点组。",
